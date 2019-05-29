@@ -1639,6 +1639,10 @@ class DNDarray:
         # TODO: generate none-PyTorch repr
         return self.__array.__repr__(*args)
 
+    def numpy(self):
+        return self.resplit(None)._DNDarray__array.cpu().numpy()
+
+
     def resplit(self, axis=None):
         """
         In-place redistribution of the content of the tensor. Allows to "unsplit" (i.e. gather) all values from all
