@@ -72,10 +72,22 @@ def __binary_op(operation, t1, t2):
                 raise TypeError('Data type not supported, input was {}'.format(type(t2)))
 
         elif isinstance(t2, dndarray.DNDarray):
+            if t1.numdims < t2.numdims:
+                t1shape = ((t2.numdims - t1.numdims) * (1,)) + t2.shape
+                t2shape = t2.shape
+            if t1.numdims > t2.numdims:
+                t1shape = t1.shape
+                t2shape = ((t1.numdims - t2.numdims) * (1,)) + t1.shape
+            else:
+                t1shape = t1.shape
+                t2shape = t2.shape
+
             if t1.split is None:
-                t1 = factories.array(t1, split=t2.split, copy=False, comm=t1.comm, device=t1.device, ndmin=-t2.numdims)
+                if t2.split is not None and t1shape[t2.split] == 1 and t2.comm.is_distributed():
+                    t1 = factories.array(t1, split=t2.split, copy=False, comm=t1.comm, device=t1.device, ndmin=-t2.numdims)
             elif t2.split is None:
-                t2 = factories.array(t2, split=t1.split, copy=False, comm=t2.comm, device=t2.device, ndmin=-t1.numdims)
+                if t1.split is not None and t2shape[t1.split] == 1 and t2.comm.is_distributed():                    
+                    t2 = factories.array(t2, split=t1.split, copy=False, comm=t2.comm, device=t2.device, ndmin=-t1.numdims)
             elif t1.split != t2.split:
                 # It is NOT possible to perform binary operations on tensors with different splits, e.g. split=0
                 # and split=1
