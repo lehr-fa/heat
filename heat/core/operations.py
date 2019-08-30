@@ -223,9 +223,9 @@ def __reduce_op(x, partial_op, reduction_op, **kwargs):
             lshape_losedim = tuple(x.lshape[dim] for dim in range(len(x.lshape)) if not dim in axis)
             output_shape = gshape_losedim
             # Take care of special cases argmin and argmax: keep partial.shape[0]
-            if (0 in axis and partial.shape[0] != 1):
+            if 0 in axis and partial.shape[0] != 1:
                 lshape_losedim = (partial.shape[0],) + lshape_losedim
-            if (not 0 in axis and partial.shape[0] != x.lshape[0]):
+            if not 0 in axis and partial.shape[0] != x.lshape[0]:
                 lshape_losedim = (partial.shape[0],) + lshape_losedim[1:]
             partial = partial.reshape(lshape_losedim)
 
