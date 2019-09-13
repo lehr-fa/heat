@@ -1,10 +1,9 @@
 import heat as ht
-import torch
 import numpy as np
-import time 
-import cProfile
+import torch
 
-class HeatLasso():
+
+class Lasso:
     """
     HeAT implementation of a the ``least absolute shrinkage and selection operator``(LASSO), a linear model with 
     L1 regularization. The optimization objective for Lasso is:
@@ -32,6 +31,7 @@ class HeatLasso():
         independent term in decision function.
     n_iter_ : int or None | array-like, shape (n_targets,)
         number of iterations run by the coordinate descent solver to reach the specified tolerance.
+
     Examples
     --------
     # ToDo: example to be added
@@ -59,16 +59,16 @@ class HeatLasso():
             return self.__theta[0]      
 
     @property
-    def lam(self): 
-         return self.__lam
+    def lam(self):
+        return self.__lam
        
     @lam.setter 
     def lam(self, arg):
-         self.__lam = arg
+        self.__lam = arg
 
     @property
-    def theta(self): 
-         return self.__theta
+    def theta(self):
+        return self.__theta
 
     def soft_threshold(self, rho):
         """
@@ -82,9 +82,9 @@ class HeatLasso():
             Thresholded model data 
         """ 
         if rho < - self.__lam:
-            return (rho + self.__lam)
-        elif rho >  self.__lam:
-            return (rho - self.__lam)
+            return rho + self.__lam
+        elif rho > self.__lam:
+            return rho - self.__lam
         else: 
             return 0.
 
@@ -99,7 +99,7 @@ class HeatLasso():
         yest : HeAT tensor, shape (1,) 
             Thresholded model data 
         """ 
-        return ht.sqrt((ht.mean((gt-yest)**2)))._DNDarray__array.item()
+        return ht.sqrt((ht.mean((gt - yest) ** 2))).item()
   
     def fit(self, X, y):
         """
@@ -120,14 +120,11 @@ class HeatLasso():
         
         # Looping until max number of iterations or convergence 
         for i in range(self.max_iter):
- 
             theta_old = theta.copy()
 
             # Looping through each coordinate
             for j in range(n):
-                
-                y_est = (X @ theta)[:, 0] 
-               
+                y_est = (X @ theta)[:, 0]
                 rho = (X[:,j]*(y - y_est + theta[j].copy() * X[:,j])).mean()
                 
                 # Intercept parameter theta[0] not be regularized 
@@ -158,7 +155,7 @@ class HeatLasso():
         return (X @ self.__theta)[:, 0] 
 
 
-class NumpyLasso():
+class NumpyLasso:
     """
     Numpy implementation of a the ``least absolute shrinkage and selection operator``(LASSO), 
     a linear model with L1 regularizer.
@@ -226,8 +223,8 @@ class NumpyLasso():
          self.__lam = arg
 
     @property
-    def theta(self): 
-         return self.__theta
+    def theta(self):
+        return self.__theta
 
     def soft_threshold(self, rho):
         """
@@ -241,9 +238,9 @@ class NumpyLasso():
             Thresholded model data 
         """ 
         if rho < - self.__lam:
-            return (rho + self.__lam)
-        elif rho >  self.__lam:
-            return (rho - self.__lam)
+            return rho + self.__lam
+        elif rho > self.__lam:
+            return rho - self.__lam
         else: 
             return 0.
 
@@ -313,9 +310,10 @@ class NumpyLasso():
         X : HeAT tensor, shape (n_samples, n_features+1)
             Input data. 
         """ 
-        return (X @ self.__theta)[:, 0] 
+        return (X @ self.__theta)[:, 0]
 
-class PytorchLasso():
+
+class PytorchLasso:
     """
     PyTorch implementation of a the ``least absolute shrinkage and selection operator``(LASSO), a linear model with 
     L1 regularization. The optimization objective for Lasso is:
@@ -370,16 +368,16 @@ class PytorchLasso():
             return self.__theta[0]      
 
     @property
-    def lam(self): 
-         return self.__lam
+    def lam(self):
+        return self.__lam
        
     @lam.setter 
     def lam(self, arg):
-         self.__lam = arg
+        self.__lam = arg
 
     @property
-    def theta(self): 
-         return self.__theta
+    def theta(self):
+        return self.__theta
 
     def soft_threshold(self, rho):
         """
@@ -393,9 +391,9 @@ class PytorchLasso():
             Thresholded model data 
         """ 
         if rho < - self.__lam:
-            return (rho + self.__lam)
-        elif rho >  self.__lam:
-            return (rho - self.__lam)
+            return rho + self.__lam
+        elif rho > self.__lam:
+            return rho - self.__lam
         else: 
             return 0.
 
@@ -428,7 +426,6 @@ class PytorchLasso():
 
         # Initialize model parameters 
         theta = torch.zeros(n, 1)
-        wwtime = np.zeros((self.max_iter, n))
         # Looping until max number of iterations or convergence 
         for i in range(self.max_iter):
  
@@ -439,7 +436,7 @@ class PytorchLasso():
                 
                 y_est = (X @ theta)[:, 0] 
                 
-                rho = (X[:,j]*(y - y_est + theta[j] * X[:,j])).mean()
+                rho = (X[:, j]*(y - y_est + theta[j] * X[:, j])).mean()
               
                 # Intercept parameter theta[0] not be regularized 
                 if j == 0: 
@@ -466,5 +463,4 @@ class PytorchLasso():
         X : HeAT tensor, shape (n_samples, n_features)
             Input data. 
         """ 
-        return (X @ self.__theta)[:, 0] 
-        
+        return (X @ self.__theta)[:, 0]

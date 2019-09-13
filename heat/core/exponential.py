@@ -65,6 +65,7 @@ def expm1(x, out=None):
     """
     return operations.__local_op(torch.expm1, x, out)
 
+
 def exp2(x, out=None):
     """
     Calculate the exponential of all elements in the input array.

@@ -17,9 +17,9 @@ __all__ = [
 
 def matmul(a, b):
     """
-    Matrix multiplication of two DNDarrays
+    Matrix multiplication of two DNDarrays.
 
-    for comment context -> a @ b = c or A @ B = c
+    a @ b = c or A @ B = c
 
     Parameters
     ----------
@@ -31,10 +31,12 @@ def matmul(a, b):
     Returns
     -------
     ht.DNDarray
-        returns a tensor with the result of a @ b. The split dimension of the returned array is typically the split dimension of a.
-        However, if a.split = None then the the c.split will be set as the split dimension of b. If both are None then c.split is also None.
-        ** NOTE ** if a is a split vector then the returned vector will be of shape (1xQ) and will be split in the 1st dimension
-        ** NOTE ** if b is a vector and either a or b is split, then the returned vector will be of shape (Lx1) and will be split in the 0th dimension
+        returns a tensor with the result of a @ b. The split dimension of the returned array is typically the split
+        dimension of a. However, if a.split = None then the the c.split will be set as the split dimension of b. If both
+        are None then c.split is also None.
+        ** NOTE ** if a is a split vector then the returned vector will be of shape (1xQ) and is split on axis=1
+        ** NOTE ** if b is a vector and either a or b is split, then the returned vector will be of shape (Lx1) and will
+                   be split in the 0th dimension
 
     References
     ----------

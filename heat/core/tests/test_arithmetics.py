@@ -397,6 +397,30 @@ class TestArithmetics(unittest.TestCase):
         self.assertEqual(shape_split_axis_tuple_sum.split, None)
         self.assertTrue((shape_split_axis_tuple_sum == expected_result).all())
 
+        # check whether split axis are properly decremented
+        split_3d_tensor = ht.ones((3, 4, 5), split=1)
+        split_3d_sum = split_3d_tensor.sum(axis=0)
+        expected_result = ht.ones((4, 5,)) * 3.
+
+        self.assertIsInstance(split_3d_sum, ht.DNDarray)
+        self.assertEqual(split_3d_sum.shape, (4, 5,))
+        self.assertEqual(split_3d_sum.dtype, ht.float32)
+        self.assertEqual(split_3d_sum._DNDarray__array.dtype, torch.float32)
+        self.assertEqual(split_3d_sum.split, 0)
+        self.assertTrue((split_3d_sum == expected_result).all())
+
+        # check whether split axis are properly decremented in multiple dimensions
+        split_3d_tensor = ht.ones((3, 4, 5), split=2)
+        split_3d_sum = split_3d_tensor.sum(axis=(0, 1,))
+        expected_result = ht.ones((5,)) * 12.
+
+        self.assertIsInstance(split_3d_sum, ht.DNDarray)
+        self.assertEqual(split_3d_sum.shape, (5,))
+        self.assertEqual(split_3d_sum.dtype, ht.float32)
+        self.assertEqual(split_3d_sum._DNDarray__array.dtype, torch.float32)
+        self.assertEqual(split_3d_sum.split, 0)
+        self.assertTrue((split_3d_sum == expected_result).all())
+
         # exceptions
         with self.assertRaises(ValueError):
             ht.ones(array_len).sum(axis=1)

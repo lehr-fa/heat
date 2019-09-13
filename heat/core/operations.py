@@ -4,9 +4,9 @@ import torch
 import warnings
 
 from .communication import MPI, MPI_WORLD
+from . import dndarray
 from . import factories
 from . import stride_tricks
-from . import dndarray
 from . import types
 
 __all__ = []
@@ -220,6 +220,7 @@ def __reduce_op(x, partial_op, reduction_op, **kwargs):
             for dim in axis:
                 partial = partial_op(partial, dim=dim, keepdim=True)
                 output_shape = output_shape[:dim] + (1,) + output_shape[dim + 1:]
+
         if not keepdim and not len(partial.shape) == 1:
             gshape_losedim = tuple(x.gshape[dim] for dim in range(len(x.gshape)) if dim not in axis)
             lshape_losedim = tuple(x.lshape[dim] for dim in range(len(x.lshape)) if dim not in axis)
@@ -236,10 +237,13 @@ def __reduce_op(x, partial_op, reduction_op, **kwargs):
         raise ValueError('Expecting output buffer of shape {}, got {}'.format(output_shape, out.shape))
 
     # perform a reduction operation in case the tensor is distributed across the reduction axis
-    if x.split is not None and (axis is None or (x.split in axis)):
-        split = None
-        if x.comm.is_distributed():
-            x.comm.Allreduce(MPI.IN_PLACE, partial, reduction_op)
+    if x.split is not None:
+        if axis is None or x.split in axis:
+            split = None
+            if x.comm.is_distributed():
+                x.comm.Allreduce(MPI.IN_PLACE, partial, reduction_op)
+        elif not keepdim:
+            split -= sum(ax < split for ax in axis)
 
     # if reduction_op is a Boolean operation, then resulting tensor is bool
     boolean_ops = [MPI.LAND, MPI.LOR, MPI.BAND, MPI.BOR]

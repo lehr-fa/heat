@@ -100,8 +100,10 @@ def div(t1, t2):
     """
     return operations.__binary_op(torch.div, t1, t2)
 
+
 # Alias in compliance with numpy API
 divide = div
+
 
 def fmod(t1, t2):
     """
@@ -173,8 +175,10 @@ def floordiv(t1, t2):
     """
     return operations.__binary_op(lambda a, b: torch.div(a, b).floor(), t1, t2)
 
+
 # Alias in compliance with numpy API
 floor_divide = floordiv
+
 
 def mod(t1, t2):
     """
@@ -257,8 +261,10 @@ def mul(t1, t2):
     """
     return operations.__binary_op(torch.mul, t1, t2)
 
+
 # Alias in compliance with numpy API
 multiply = mul
+
 
 def pow(t1, t2):
     """
@@ -297,8 +303,10 @@ def pow(t1, t2):
     """
     return operations.__binary_op(torch.pow, t1, t2)
 
+
 # Alias in compliance with numpy API
 power = pow
+
 
 def remainder(t1, t2):
     """
@@ -336,6 +344,7 @@ def remainder(t1, t2):
             [2, 2]], dtype=torch.int32)
     """
     return operations.__binary_op(torch.remainder, t1, t2)
+
 
 def prod(x, axis=None, out=None, keepdim=None):
     """
@@ -421,8 +430,10 @@ def sub(t1, t2):
     """
     return operations.__binary_op(torch.sub, t1, t2)
 
+
 # Alias in compliance with numpy API
 subtract = sub
+
 
 def sum(x, axis=None, out=None, keepdim=None):
     """

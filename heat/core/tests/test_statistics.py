@@ -238,7 +238,7 @@ class TestStatistics(unittest.TestCase):
         self.assertIsInstance(avg_volume_with_cumwgt[1], ht.DNDarray)
         self.assertEqual(avg_volume_with_cumwgt[1].gshape, avg_volume_with_cumwgt[0].gshape)
         self.assertEqual(avg_volume_with_cumwgt[1].split, avg_volume_with_cumwgt[0].split)
-        
+
 
         # check average over all float elements of split 3d tensor, tuple axis
         random_volume = ht.array(ht.random.randn(3, 3, 3), split=0)
@@ -418,9 +418,8 @@ class TestStatistics(unittest.TestCase):
         # check maximum over float elements of split 3d tensors
         # TODO: add check for uneven distribution of dimensions (see Issue #273)
         size = ht.MPI_WORLD.size
-        torch.manual_seed(1)
-        random_volume_1 = ht.array(ht.random.randn(12, 3, 3), is_split=0)
-        random_volume_2 = ht.array(ht.random.randn(12, 1, 3), is_split=0)
+        random_volume_1 = ht.random.randn(size * 12, 3, 3, split=0)
+        random_volume_2 = ht.random.randn(size * 12, 1, 3, split=0)
         maximum_volume = ht.maximum(random_volume_1, random_volume_2)
 
         self.assertIsInstance(maximum_volume, ht.DNDarray)
