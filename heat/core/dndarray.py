@@ -1378,7 +1378,7 @@ class DNDarray:
                     gout = [0] * len(self.gshape)
                     # arr is empty and gout is zeros
 
-            elif isinstance(key, list):
+            elif isinstance(key, list) and self.split == 0:
                 key = list(set(key) & chunk_set)
                 key = [i - chunk_start for i in key]
                 arr = self.__array[key]
@@ -1388,10 +1388,18 @@ class DNDarray:
                     gout = [0] * len(self.gshape)
 
             elif isinstance(key, tuple):  # multi-argument gets are passed as tuples by python
+                list_flag = True if any((isinstance(j, list) for j in key)) else False
                 gout = [0] * len(self.gshape)
                 # handle the dimensional reduction for integers
                 ints = sum([isinstance(it, int) for it in key])
                 gout = gout[:len(gout) - ints]
+                key = list(key)
+
+                # for c, it in enumerate(key):
+                #     if self.split == c and isinstance(it, list):
+                #         key[c] = [i - chunk_start for i in list(set(it) & chunk_set)]
+                # if any((j == [] for j in key)):
+                #     key = [[]] * len(key)
 
                 if self.split >= len(gout):
                     new_split = len(gout) - 1 if len(gout) - 1 > 0 else 0
@@ -1399,6 +1407,7 @@ class DNDarray:
                     new_split = self.split
                 gout = [0] * len(self.gshape)
 
+                # print(key)
                 if isinstance(key[self.split], slice):  # if a slice is given in the split direction
                     # below allows for the split given to contain Nones
                     key_stop = key[self.split].stop
@@ -1413,21 +1422,26 @@ class DNDarray:
                         overlap.sort()
                         hold = [x - chunk_start for x in overlap]
                         key[self.split] = slice(min(hold), max(hold) + 1, key[self.split].step)
-                        arr = self.__array[tuple(key)]
+                        arr = self.__array[tuple(key) if not list_flag else key]
                         gout[:len(arr.shape)] = list(arr.shape)
+                elif isinstance(key[self.split], list):
+                    if len(key) == 0:
+                        gout = [0] * len(self.gshape)
+                    arr = self.__array[key]
+                    gout[:len(arr.shape)] = list(arr.shape)
 
-                # if the given axes are not splits (must be ints for python)
+                # if the given axes are not splits
                 # this means the whole slice is on one node
                 elif key[self.split] in range(chunk_start, chunk_end):
                     key = list(key)
                     key[self.split] = key[self.split] - chunk_start
                     # print(tuple(key) if not list_flag else key, chunk_start, chunk_end)
-                    arr = self.__array[tuple(key)]
+                    arr = self.__array[tuple(key) if not list_flag else key]
                     gout[:len(arr.shape)] = list(arr.shape)
                 elif key[self.split] < 0 and self.gshape[self.split] + key[self.split] in range(chunk_start, chunk_end):
                     key = list(key)
                     key[self.split] = key[self.split] + chunk_end - chunk_start
-                    arr = self.__array[tuple(key)]
+                    arr = self.__array[tuple(key) if not list_flag else key]
                     gout[:len(arr.shape)] = list(arr.shape)
                 else:
                     warnings.warn("This process (rank: {}) is without data after slicing, running the .balance_() function is recommended".format(
@@ -2448,6 +2462,7 @@ class DNDarray:
             _, _, chunk_slice = self.comm.chunk(self.shape, self.split)
             chunk_start = chunk_slice[self.split].start
             chunk_end = chunk_slice[self.split].stop
+            chunk_set = set(range(chunk_start, chunk_end))
 
             if isinstance(key, int):
                 if key < 0:
@@ -2459,9 +2474,20 @@ class DNDarray:
                     if self[key].split is not None and isinstance(value, DNDarray) and value.split is None:
                         value = factories.array(value, split=self[key].split)
                     self.__setter(key, value)
-            elif isinstance(key, (tuple, list, torch.Tensor)):
+            elif isinstance(key, list):
+                key = list(set(key) & chunk_set)
+                key = [i - chunk_start for i in key]
+                self.__setter(key, value)
+            elif isinstance(key, (tuple, torch.Tensor)):
+                key = list(key)
+                # for c, it in enumerate(key):
+                #     if self.split == c and isinstance(it, list):
+                #         key[c] = [i - chunk_start for i in list(set(it) & chunk_set)]
+                #
+                # if any((j == [] for j in key)):
+                #     key = [[]] * len(key)
+
                 if isinstance(key[self.split], slice):
-                    key = list(key)
                     overlap = list(set(range(key[self.split].start if key[self.split].start is not None else 0,
                                              key[self.split].stop if key[self.split].stop is not None else self.gshape[self.split],
                                              key[self.split].step if key[self.split].step is not None else 1))
@@ -2479,13 +2505,15 @@ class DNDarray:
                         except IndexError:
                             self.__setter(tuple(key), value)
 
+                elif isinstance(key[self.split], list):
+                    # print(key)
+                    self.__setter(key, value)
+
                 elif key[self.split] in range(chunk_start, chunk_end):
-                    key = list(key)
                     key[self.split] = key[self.split] - chunk_start
                     self.__setter(tuple(key), value)
 
                 elif key[self.split] < 0:
-                    key = list(key)
                     if self.gshape[self.split] + key[self.split] in range(chunk_start, chunk_end):
                         key[self.split] = key[self.split] + chunk_end - chunk_start
                         self.__setter(tuple(key), value)
