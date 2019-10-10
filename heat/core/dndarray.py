@@ -1378,8 +1378,16 @@ class DNDarray:
                     gout = [0] * len(self.gshape)
                     # arr is empty and gout is zeros
 
-            elif isinstance(key, (tuple, list)):  # multi-argument gets are passed as tuples by python
-                list_flag = True if isinstance(key, list) else False
+            elif isinstance(key, list):
+                key = list(set(key) & chunk_set)
+                key = [i - chunk_start for i in key]
+                arr = self.__array[key]
+                gout[:len(arr.shape)] = list(arr.shape)
+                new_split = self.split
+                if len(key) == 0:
+                    gout = [0] * len(self.gshape)
+
+            elif isinstance(key, tuple):  # multi-argument gets are passed as tuples by python
                 gout = [0] * len(self.gshape)
                 # handle the dimensional reduction for integers
                 ints = sum([isinstance(it, int) for it in key])
@@ -1405,7 +1413,7 @@ class DNDarray:
                         overlap.sort()
                         hold = [x - chunk_start for x in overlap]
                         key[self.split] = slice(min(hold), max(hold) + 1, key[self.split].step)
-                        arr = self.__array[tuple(key) if not list_flag else key]
+                        arr = self.__array[tuple(key)]
                         gout[:len(arr.shape)] = list(arr.shape)
 
                 # if the given axes are not splits (must be ints for python)
@@ -1413,12 +1421,13 @@ class DNDarray:
                 elif key[self.split] in range(chunk_start, chunk_end):
                     key = list(key)
                     key[self.split] = key[self.split] - chunk_start
-                    arr = self.__array[tuple(key) if not list_flag else key]
+                    # print(tuple(key) if not list_flag else key, chunk_start, chunk_end)
+                    arr = self.__array[tuple(key)]
                     gout[:len(arr.shape)] = list(arr.shape)
                 elif key[self.split] < 0 and self.gshape[self.split] + key[self.split] in range(chunk_start, chunk_end):
                     key = list(key)
                     key[self.split] = key[self.split] + chunk_end - chunk_start
-                    arr = self.__array[tuple(key) if not list_flag else key]
+                    arr = self.__array[tuple(key)]
                     gout[:len(arr.shape)] = list(arr.shape)
                 else:
                     warnings.warn("This process (rank: {}) is without data after slicing, running the .balance_() function is recommended".format(

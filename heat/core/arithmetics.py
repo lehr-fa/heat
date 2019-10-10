@@ -136,7 +136,7 @@ def diff(a, n=1, axis=-1):
 
     axis_slice_end = [slice(None)] * len(a.shape)
     axis_slice_end[axis] = slice(None, -1 * n, None)
-    ret = ret[axis_slice_end]  # slice of the last element on the array (nonsense data)
+    ret = ret[tuple(axis_slice_end)]  # slice of the last element on the array (nonsense data)
     ret.balance_()  # balance the array before returning
     return ret
 
