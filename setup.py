@@ -16,7 +16,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Helmholtz Association",
-    author_email="martin.siggel@dlr.de",
+    author_email="haf@fz-juelich.de",
     url="https://github.com/helmholtz-analytics/heat",
     keywords=["data", "analytics", "tensors", "distributed", "gpu"],
     classifiers=[
