@@ -187,10 +187,10 @@ class TestStatistics(unittest.TestCase):
             actual = ht.array([[1, -1], [-1, 1]], split=0)
             self.assertTrue(ht.equal(cov, actual))
 
-        data = np.loadtxt("heat/datasets/data/iris.csv", delimiter=";")
+        data = np.loadtxt("heat/datasets/iris.csv", delimiter=";")
         np_cov = np.cov(data[:, 0], data[:, 1:3], rowvar=False)
 
-        htdata = ht.load("heat/datasets/data/iris.csv", sep=";", split=0)
+        htdata = ht.load("heat/datasets/iris.csv", sep=";", split=0)
         ht_cov = ht.cov(htdata[:, 0], htdata[:, 1:3], rowvar=False)
         self.assertTrue(ht.allclose(ht.array(np_cov, dtype=ht.float) - ht_cov, 0, atol=1e-4))
 
@@ -207,18 +207,18 @@ class TestStatistics(unittest.TestCase):
         self.assertTrue(ht.allclose(ht.array(np_cov, dtype=ht.float) - ht_cov, 0, atol=1e-4))
 
         if 1 < x.comm.size < 5:
-            htdata = ht.load("heat/datasets/data/iris.csv", sep=";", split=1)
+            htdata = ht.load("heat/datasets/iris.csv", sep=";", split=1)
             np_cov = np.cov(data, rowvar=False)
             ht_cov = ht.cov(htdata, rowvar=False)
             self.assertTrue(ht.allclose(ht.array(np_cov, dtype=ht.float), ht_cov, atol=1e-4))
 
             np_cov = np.cov(data, data, rowvar=True)
 
-            htdata = ht.load("heat/datasets/data/iris.csv", sep=";", split=0)
+            htdata = ht.load("heat/datasets/iris.csv", sep=";", split=0)
             ht_cov = ht.cov(htdata, htdata, rowvar=True)
             self.assertTrue(ht.allclose(ht.array(np_cov, dtype=ht.float), ht_cov, atol=1e-4))
 
-            htdata = ht.load("heat/datasets/data/iris.csv", sep=";", split=0)
+            htdata = ht.load("heat/datasets/iris.csv", sep=";", split=0)
             with self.assertRaises(RuntimeError):
                 ht.cov(htdata[1:], rowvar=False)
             with self.assertRaises(RuntimeError):
@@ -593,7 +593,7 @@ class TestStatistics(unittest.TestCase):
         # values for the iris dataset mean measured by libreoffice calc
         ax0 = ht.array([5.84333333333333, 3.054, 3.75866666666667, 1.19866666666667])
         for sp in [None, 0, 1]:
-            iris = ht.load("heat/datasets/data/iris.h5", "data", split=sp)
+            iris = ht.load("heat/datasets/iris.h5", "data", split=sp)
             self.assertTrue(ht.allclose(ht.mean(iris), 3.46366666666667))
             self.assertTrue(ht.allclose(ht.mean(iris, axis=0), ax0))
 
@@ -843,5 +843,5 @@ class TestStatistics(unittest.TestCase):
 
         # values for the iris dataset var measured by libreoffice calc
         for sp in [None, 0, 1]:
-            iris = ht.load_hdf5("heat/datasets/data/iris.h5", "data", split=sp)
+            iris = ht.load_hdf5("heat/datasets/iris.h5", "data", split=sp)
             self.assertTrue(ht.allclose(ht.var(iris, bessel=True), 3.90318519755147))
