@@ -11,6 +11,9 @@ from .stride_tricks import sanitize_axis
 if "openmpi" in os.environ.get("MPI_SUFFIX", "").lower():
     buffer = subprocess.check_output(["ompi_info", "--parsable", "--all"])
     CUDA_AWARE_MPI = b"mpi_built_with_cuda_support:value:true" in buffer
+# check whether MVAPICH support CUDA-aware MPI
+elif "mvapich2" in os.environ.get("MPI_SUFFIX", "").lower():
+    CUDA_AWARE_MPI = os.environ.get("MV2_USE_CUDA") == "1"
 else:
     CUDA_AWARE_MPI = False
 
