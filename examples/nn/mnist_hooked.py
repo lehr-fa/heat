@@ -8,6 +8,13 @@ from torchvision import transforms
 import heat as ht
 
 
+# global batch size
+bGlo = 32
+
+# local batch size
+bLoc = 0
+
+
 # defining a simple fc nn with 2 hidden layers
 class Net(nn.Module):
     def __init__(self):
@@ -25,10 +32,16 @@ class Net(nn.Module):
 
 # hook function for blocking gradient data exchange
 def blocking_hook(grad_loc):
+    # Pytorch Doc says, :attr:`grad` may not be modified itself, so it has to be cloned
+    # (cf. https://pytorch.org/docs/stable/tensors.html#torch.Tensor.register_hook).
+    # Seems to be true, since otherwise a Runtime Error is thrown when working on it
+    grad_loc_cpy = grad_loc.clone()
+
+    # counterbalance local gradient averaging
+    grad_loc_cpy *= bLoc
+
     # wrap local gradient into heat tensor
-    # TODO: Check, if tensor has to be copied - Pytorch Doc says, :attr:`grad` may not be modified
-    #       (cf. https://pytorch.org/docs/stable/tensors.html#torch.Tensor.register_hook)
-    grad_ht = ht.array(grad_loc, copy=True)
+    grad_ht = ht.array(grad_loc_cpy, copy=False)
 
     # perform MPI Allreduce to compute global gradient
     grad_ht.comm.Allreduce(ht.MPI.IN_PLACE, grad_ht, ht.MPI.SUM)
@@ -36,23 +49,32 @@ def blocking_hook(grad_loc):
     # unwrap global gradient from heat tensor
     grad_glo = grad_ht._DNDarray__array
 
+    # global gradient averaging
+    grad_glo /= bGlo
+
     return grad_glo
 
 
 # hook function for non-blocking gradient data exchange
 def nonblocking_hook(grad_loc):
+    # Pytorch Doc says, :attr:`grad` may not be modified itself, so it has to be cloned
+    # (cf. https://pytorch.org/docs/stable/tensors.html#torch.Tensor.register_hook).
+    # Seems to be true, since otherwise a Runtime Error is thrown when working on it
+    grad_loc_cpy = grad_loc.clone()
+
+    # counterbalance local gradient averaging
+    grad_loc_cpy *= bLoc
+
     # wrap local gradient into heat tensor
-    # TODO: Check, if tensor has to be copied - Pytorch Doc says, :attr:`grad` may not be modified
-    #       (cf. https://pytorch.org/docs/stable/tensors.html#torch.Tensor.register_hook)
-    grad_ht = ht.array(grad_loc, copy=True)
+    grad_ht = ht.array(grad_loc_cpy, copy=False)
 
     # perform MPI IAllreduce to compute global gradient, returns wait handle
     wait_handle = grad_ht.comm.Iallreduce(ht.MPI.IN_PLACE, grad_ht, ht.MPI.SUM)
 
     # inject wait handle into local gradient
-    setattr(grad_loc, "wait_handle", wait_handle)
+    setattr(grad_loc_cpy, "wait_handle", wait_handle)
 
-    return grad_loc
+    return grad_loc_cpy
 
 
 net = Net()
@@ -76,7 +98,7 @@ train_loader = torch.utils.data.DataLoader(
             [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
         ),
     ),
-    batch_size=32,
+    batch_size=bGlo,
     shuffle=True,
 )
 
@@ -88,7 +110,7 @@ test_loader = torch.utils.data.DataLoader(
             [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
         ),
     ),
-    batch_size=32,
+    batch_size=bGlo,
     shuffle=True,
 )
 
@@ -98,6 +120,7 @@ net.train()
 for epoch in range(2):
     for batch_idx, (data, target) in enumerate(train_loader):
         input_ = data.view(data.size(0), -1)
+        bLoc = input_.size()[0]
         optimizer.zero_grad()
         output = net(input_)
         loss = criterion(output, target)
