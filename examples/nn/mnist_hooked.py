@@ -5,6 +5,8 @@ import torch.optim as optim
 import torchvision.datasets as datasets
 from torchvision import transforms
 
+import heat as ht
+
 
 # defining a simple fc nn with 2 hidden layers
 class Net(nn.Module):
@@ -21,17 +23,43 @@ class Net(nn.Module):
         return x
 
 
-# hook function for gradient data exchange
-def hookfunc(grad_loc):
-    # do stuff with local gradient
-    print(grad_loc.size())
+# hook function for blocking gradient data exchange
+def blocking_hook(grad_loc):
+    # wrap local gradient into heat tensor
+    # TODO: Check, if tensor has to be copied - Pytorch Doc says, :attr:`grad` may not be modified
+    #       (cf. https://pytorch.org/docs/stable/tensors.html#torch.Tensor.register_hook)
+    grad_ht = ht.array(grad_loc, copy=True)
+
+    # perform MPI Allreduce to compute global gradient
+    grad_ht.comm.Allreduce(ht.MPI.IN_PLACE, grad_ht, ht.MPI.SUM)
+
+    # unwrap global gradient from heat tensor
+    grad_glo = grad_ht._DNDarray__array
+
+    return grad_glo
+
+
+# hook function for non-blocking gradient data exchange
+def nonblocking_hook(grad_loc):
+    # wrap local gradient into heat tensor
+    # TODO: Check, if tensor has to be copied - Pytorch Doc says, :attr:`grad` may not be modified
+    #       (cf. https://pytorch.org/docs/stable/tensors.html#torch.Tensor.register_hook)
+    grad_ht = ht.array(grad_loc, copy=True)
+
+    # perform MPI IAllreduce to compute global gradient, returns wait handle
+    wait_handle = grad_ht.comm.Iallreduce(ht.MPI.IN_PLACE, grad_ht, ht.MPI.SUM)
+
+    # inject wait handle into local gradient
+    setattr(grad_loc, "wait_handle", wait_handle)
+
+    return grad_loc
 
 
 net = Net()
 
 # registering hooks for all model parameter tensors (here: one bias and one weights tensor per layer)
 for param in net.parameters():
-    param.register_hook(hookfunc)
+    param.register_hook(blocking_hook)
 
 
 criterion = nn.NLLLoss()
